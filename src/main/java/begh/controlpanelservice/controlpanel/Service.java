@@ -1,10 +1,12 @@
 package begh.controlpanelservice.controlpanel;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.time.Duration;
 import java.util.List;
 
 @RequiredArgsConstructor
@@ -20,24 +22,38 @@ public class Service {
     }
     private Mono<ServiceResponse> map(ServiceUrl serviceUrl) {
         return webClient.get()
-                .uri(serviceUrl.getLocalURL() + "/health")
-                .retrieve()
-                .bodyToMono(ServiceResponse.class)
+                .uri(serviceUrl.getURL() + "/health")
+                .exchangeToMono(response -> {
+                    String statusText;
+                    if (response.statusCode().is2xxSuccessful()) {
+                        statusText = "Good";
+                    } else if (response.statusCode().value() == 404) {
+                        statusText = "Not found";
+                    } else {
+                        statusText = "Warning";
+                    }
+                    return response.bodyToMono(ServiceResponse.class)
+                            .map(body -> ServiceResponse.builder()
+                                    .id(serviceUrl.getId())
+                                    .name(serviceUrl.getName())
+                                    .URL(serviceUrl.getURL())
+                                    .uptime("/actuator/uptime")
+                                    .health("/actuator/health")
+                                    .statusCode(response.statusCode().value())
+                                    .status(statusText)
+                                    .online(true)
+                                    .build());
+                })
                 .onErrorResume(e -> Mono.just(
                         ServiceResponse.builder()
+                                .id(serviceUrl.getId())
                                 .name(serviceUrl.getName())
                                 .URL(serviceUrl.getURL())
                                 .uptime("/actuator/uptime")
                                 .health("/actuator/health")
+                                .statusCode(0)
+                                .status("Error")
                                 .online(false)
-                                .build()
-                ))
-                .map(response -> ServiceResponse.builder()
-                        .name(serviceUrl.getName())
-                        .URL(serviceUrl.getURL())
-                        .uptime("/actuator/uptime")
-                        .health("/actuator/health")
-                        .online(true)
-                        .build() );
+                                .build()));
     }
 }
