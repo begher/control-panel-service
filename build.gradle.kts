@@ -19,6 +19,8 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-webflux")
     implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springframework.boot:spring-boot-starter-security")
+    implementation("com.google.firebase:firebase-admin:9.2.0")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     compileOnly("org.projectlombok:lombok")
     runtimeOnly("org.postgresql:postgresql")
